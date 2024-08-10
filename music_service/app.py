@@ -20,6 +20,8 @@ if not os.path.exists(music_dir):
 @app.route('/upload', methods=['POST'])
 def upload_music():
     music_file = request.files['file']
+    artist = request.form.get('artist', 'Unknown Artist')  # Default to "Unknown Artist" if not provided
+
     if music_file and music_file.filename.endswith('.mp3'):
         music_id = str(uuid.uuid4())
         file_path = os.path.join(music_dir, music_id + '.mp3')
@@ -27,10 +29,12 @@ def upload_music():
         music_collection.insert_one({
             'music_id': music_id,
             'filename': music_file.filename,
+            'artist': artist,
             'path': file_path
         })
         return jsonify({"message": "Music uploaded", "music_id": music_id}), 201
     return jsonify({"error": "Invalid file type"}), 400
+
 
 @app.route('/stream/<music_id>', methods=['GET'])
 def stream_music(music_id):
@@ -43,9 +47,14 @@ def stream_music(music_id):
 def list_music():
     music_files = music_collection.find({})
     return jsonify([
-        {"music_id": music['music_id'], "filename": music['filename']}
+        {
+            "music_id": music['music_id'],
+            "filename": music['filename'],
+            "artist": music.get('artist', 'Unknown Artist')  # Handle cases where artist might not be present
+        }
         for music in music_files
     ]), 200
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002)

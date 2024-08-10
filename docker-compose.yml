@@ -74,6 +74,18 @@ services:
       -d '{\"name\": \"recommendation_service\", \"url\": \"http://recommendation_service:5003\"}'
       http://service_registry:5000/register"
 
+  spotify-clone:
+    build:
+      context: ./spotify-clone  # Ensure this is the correct path to your frontend directory
+      dockerfile: Dockerfile
+    container_name: spotify-clone
+    ports:
+      - "3000:3000"  # This is the default port for Vite/React apps
+    depends_on:
+      - user_service
+      - music_service
+      - recommendation_service
+
   nginx:
     build:
       context: .
@@ -82,6 +94,7 @@ services:
     ports:
       - "80:80"
     depends_on:
+      - spotify-clone  # Ensure Nginx depends on the frontend as well
       - user_service
       - music_service
       - recommendation_service
