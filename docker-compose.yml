@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  service_registry:
+    build:
+      context: ./service_registry
+      dockerfile: Dockerfile
+    container_name: service_registry
+    ports:
+      - "5000:5000"
+
+  user_service:
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile
+    container_name: user_service
+    ports:
+      - "5001:5001"
+    depends_on:
+      - service_registry
+      - mongodb
+    environment:
+      - SERVICE_NAME=user_service
+      - SERVICE_URL=http://user_service:5001
+      - MONGO_URI=mongodb://mongodb:27017/spotify
+    command: >
+      sh -c "python app.py && curl -X POST -H 'Content-Type: application/json'
+      -d '{\"name\": \"user_service\", \"url\": \"http://user_service:5001\"}'
+      http://service_registry:5000/register"
+
+  music_service:
+    build:
+      context: ./music_service
+      dockerfile: Dockerfile
+    container_name: music_service
+    ports:
+      - "5002:5002"
+    depends_on:
+      - service_registry
+      - mongodb
+    environment:
+      - SERVICE_NAME=music_service
+      - SERVICE_URL=http://music_service:5002
+      - MONGO_URI=mongodb://mongodb:27017/spotify
+    command: >
+      sh -c "python app.py && curl -X POST -H 'Content-Type: application/json'
+      -d '{\"name\": \"music_service\", \"url\": \"http://music_service:5002\"}'
+      http://service_registry:5000/register"
+
+  recommendation_service:
+    build:
+      context: ./recommendation_service
+      dockerfile: Dockerfile
+    container_name: recommendation_service
+    ports:
+      - "5003:5003"
+    depends_on:
+      - service_registry
+      - mongodb
+    environment:
+      - SERVICE_NAME=recommendation_service
+      - SERVICE_URL=http://recommendation_service:5003
+      - MONGO_URI=mongodb://mongodb:27017/spotify
+    command: >
+      sh -c "python app.py && curl -X POST -H 'Content-Type: application/json'
+      -d '{\"name\": \"recommendation_service\", \"url\": \"http://recommendation_service:5003\"}'
+      http://service_registry:5000/register"
+
+  load_balancer:
+    build:
+      context: ./load_balancer
+      dockerfile: Dockerfile
+    container_name: load_balancer
+    ports:
+      - "5004:5004"
+    depends_on:
+      - service_registry
+      - user_service
+      - music_service
+      - recommendation_service
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    expose:
+      - "3000"
+    depends_on:
+      - load_balancer
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - load_balancer
+
+volumes:
+  mongo-data:
