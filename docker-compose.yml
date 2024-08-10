@@ -74,39 +74,17 @@ services:
       -d '{\"name\": \"recommendation_service\", \"url\": \"http://recommendation_service:5003\"}'
       http://service_registry:5000/register"
 
-  load_balancer:
-    build:
-      context: ./load_balancer
-      dockerfile: Dockerfile
-    container_name: load_balancer
-    ports:
-      - "5004:5004"
-    depends_on:
-      - service_registry
-      - user_service
-      - music_service
-      - recommendation_service
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: frontend
-    expose:
-      - "3000"
-    depends_on:
-      - load_balancer
-
   nginx:
     build:
-      context: ./nginx
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./nginx/Dockerfile
     container_name: nginx
     ports:
       - "80:80"
     depends_on:
-      - frontend
-      - load_balancer
+      - user_service
+      - music_service
+      - recommendation_service
 
 volumes:
   mongo-data:

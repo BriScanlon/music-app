@@ -1,0 +1,20 @@
+.tracks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  
+  .track-card {
+    background-color: #282828;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    color: #b3b3b3;
+  }
+  
+  .track-card:hover {
+    background-color: #333333;
+    color: #ffffff;
+  }
+  

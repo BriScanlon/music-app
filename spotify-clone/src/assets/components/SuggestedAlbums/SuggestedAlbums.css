@@ -1,0 +1,24 @@
+.section {
+    margin-bottom: 30px;
+  }
+  
+  .albums {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+  }
+  
+  .album-card {
+    width: 150px;
+    background-color: #282828;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    color: #b3b3b3;
+  }
+  
+  .album-card:hover {
+    background-color: #333333;
+    color: #ffffff;
+  }
+  

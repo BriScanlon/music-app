@@ -1,50 +1,65 @@
-from flask import Flask, request, jsonify
-from pymongo import MongoClient
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, request, jsonify, make_response
+from flask_cors import CORS
+import jwt
+import datetime
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'
 
-# MongoDB configuration
-mongo_uri = "mongodb://mongodb:27017/spotify"
-client = MongoClient(mongo_uri)
-db = client.spotify
-users_collection = db.users
-playlists_collection = db.playlists
+# Enable CORS to allow requests from the frontend
+CORS(app, supports_credentials=True)
 
-@app.route('/register', methods=['POST'])
-def register():
-    data = request.json
-    username = data['username']
-    password = data['password']
-    if users_collection.find_one({"username": username}):
-        return jsonify({"message": "User already exists"}), 400
-    hashed_password = generate_password_hash(password)
-    users_collection.insert_one({"username": username, "password": hashed_password})
-    playlists_collection.insert_one({"username": username, "playlists": []})
-    return jsonify({"message": "User registered successfully"}), 201
+# Sample user data
+users = {
+    "testuser": "password123"
+}
+
+def create_token(username):
+    token = jwt.encode({
+        'username': username,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    }, app.config['SECRET_KEY'], algorithm="HS256")
+    return token
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
-    username = data['username']
-    password = data['password']
-    user = users_collection.find_one({"username": username})
-    if user and check_password_hash(user['password'], password):
-        return jsonify({"message": "Login successful"}), 200
+    username = data.get('username')
+    password = data.get('password')
+
+    if username in users and users[username] == password:
+        token = create_token(username)
+        resp = make_response(jsonify({"message": "Login successful"}), 200)
+        resp.set_cookie('auth_token', token, httponly=True, secure=False, samesite='Strict')
+        return resp
     return jsonify({"message": "Invalid credentials"}), 401
 
-@app.route('/playlists', methods=['GET', 'POST'])
-def manage_playlists():
-    username = request.args.get('username')
-    if request.method == 'POST':
-        playlist = request.json.get('playlist')
-        playlists_collection.update_one(
-            {"username": username},
-            {"$push": {"playlists": playlist}}
-        )
-        return jsonify({"message": "Playlist added"}), 201
-    user_playlists = playlists_collection.find_one({"username": username})
-    return jsonify({"playlists": user_playlists.get('playlists', [])}), 200
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    if username not in users:
+        users[username] = password
+        token = create_token(username)
+        resp = make_response(jsonify({"message": "Registration successful"}), 201)
+        resp.set_cookie('auth_token', token, httponly=True, secure=False, samesite='Strict')
+        return resp
+    return jsonify({"message": "User already exists"}), 400
+
+@app.route('/protected', methods=['GET'])
+def protected():
+    token = request.cookies.get('auth_token')
+    if not token:
+        return jsonify({"message": "Token is missing!"}), 401
+    try:
+        data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        return jsonify({"message": f"Welcome {data['username']}!"})
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired!"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"message": "Invalid token!"}), 401
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='0.0.0.0', port=5001, debug=True)
