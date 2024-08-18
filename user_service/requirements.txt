@@ -1,4 +1,0 @@
-Flask
-pymongo
-PyJWT 
-Flask-CORS

@@ -10,13 +10,19 @@ function LoginPage({ setIsAuthenticated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const endpoint = isRegistering ? '/api/user_service/register' : '/api/user_service/login';
+    // Update the endpoint to point to the auth_service
+    const endpoint = isRegistering ? '/api/auth_service/register' : '/api/auth_service/login';
     try {
       const response = await axios.post(endpoint, { username, password });
       if (response.status === 200 || response.status === 201) {
-        document.cookie = `auth_token=${response.data.token}; path=/`;
+        // Store the token in a cookie
+        document.cookie = `AuthToken=${response.data.token}; path=/;`;
+
+        // Set the authentication state
         setIsAuthenticated(true);
-        navigate('/dashboard'); // Ensure this line is correctly implemented
+
+        // Redirect to the dashboard
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Error:', error);

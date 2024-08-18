@@ -4,10 +4,15 @@ services:
   mongodb:
     image: mongo:latest
     container_name: mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
     ports:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    networks:
+      - app-network
 
   service_registry:
     build:
@@ -16,25 +21,8 @@ services:
     container_name: service_registry
     ports:
       - "5000:5000"
-
-  user_service:
-    build:
-      context: ./user_service
-      dockerfile: Dockerfile
-    container_name: user_service
-    ports:
-      - "5001:5001"
-    depends_on:
-      - service_registry
-      - mongodb
-    environment:
-      - SERVICE_NAME=user_service
-      - SERVICE_URL=http://user_service:5001
-      - MONGO_URI=mongodb://mongodb:27017/spotify
-    command: >
-      sh -c "python app.py && curl -X POST -H 'Content-Type: application/json'
-      -d '{\"name\": \"user_service\", \"url\": \"http://user_service:5001\"}'
-      http://service_registry:5000/register"
+    networks:
+      - app-network
 
   music_service:
     build:
@@ -49,7 +37,11 @@ services:
     environment:
       - SERVICE_NAME=music_service
       - SERVICE_URL=http://music_service:5002
-      - MONGO_URI=mongodb://mongodb:27017/spotify
+      - MONGO_URI=${DATABASE_CONNECTION}
+    volumes:
+      - music-files:/app/music_files
+    networks:
+      - app-network
     command: >
       sh -c "python app.py && curl -X POST -H 'Content-Type: application/json'
       -d '{\"name\": \"music_service\", \"url\": \"http://music_service:5002\"}'
@@ -68,7 +60,9 @@ services:
     environment:
       - SERVICE_NAME=recommendation_service
       - SERVICE_URL=http://recommendation_service:5003
-      - MONGO_URI=mongodb://mongodb:27017/spotify
+      - MONGO_URI=${DATABASE_CONNECTION}
+    networks:
+      - app-network
     command: >
       sh -c "python app.py && curl -X POST -H 'Content-Type: application/json'
       -d '{\"name\": \"recommendation_service\", \"url\": \"http://recommendation_service:5003\"}'
@@ -76,15 +70,16 @@ services:
 
   spotify-clone:
     build:
-      context: ./spotify-clone  # Ensure this is the correct path to your frontend directory
+      context: ./spotify-clone
       dockerfile: Dockerfile
     container_name: spotify-clone
     ports:
-      - "3000:3000"  # This is the default port for Vite/React apps
+      - "3000:3000"
     depends_on:
-      - user_service
       - music_service
       - recommendation_service
+    networks:
+      - app-network
 
   nginx:
     build:
@@ -94,10 +89,31 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - spotify-clone  # Ensure Nginx depends on the frontend as well
-      - user_service
+      - spotify-clone
       - music_service
       - recommendation_service
+    networks:
+      - app-network
+
+  auth_service:
+    build:
+      context: ./auth_service
+    container_name: auth_service
+    ports:
+      - "5004:5004"
+    environment:
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_TOKEN_EXPIRE=${JWT_TOKEN_EXPIRE}
+      - MONGODB_USER=${MONGODB_USER}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
+      - DATABASE_CONNECTION=${DATABASE_CONNECTION}
+    networks:
+      - app-network
 
 volumes:
   mongo-data:
+  music-files:
+
+networks:
+  app-network:
+    driver: bridge

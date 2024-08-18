@@ -1,28 +1,127 @@
 .dashboard {
-    display: flex;
-    height: 100vh;
-    background-color: #121212;
-    color: #ffffff;
-  }
-  
-  .main-content {
-    flex-grow: 1;
-    padding: 20px;
-    overflow-y: auto;
-  }
-  
-  .header {
-    display: flex;
-    justify-content: flex-end;
-    padding-bottom: 20px;
-  }
-  
-  .search-bar {
-    background-color: #333;
-    color: #fff;
-    border: none;
-    padding: 10px;
-    border-radius: 4px;
-    width: 250px;
-  }
-  
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: #121212;
+  color: #ffffff;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #181818;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  color: #b3b3b3;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  position: relative; /* Added to position the Now Playing bar */
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+}
+
+.search-bar {
+  background-color: #333;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  width: 250px;
+}
+
+.upload-section {
+  display: flex;
+  align-items: center;
+}
+
+.file-input {
+  color: #ffffff;
+  background-color: #333;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+
+.upload-button {
+  background-color: #1db954;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.upload-button:hover {
+  background-color: #1ed760;
+}
+
+.music-list-section {
+  flex-grow: 1;
+  padding-bottom: 60px; /* Add padding to ensure content isn't hidden under Now Playing bar */
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #282828;
+  border-radius: 8px;
+}
+
+.music-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.music-title {
+  font-weight: bold;
+  color: #b3b3b3;
+}
+
+button {
+  background-color: #1db954;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #1ed760;
+}
+
+.now-playing {
+  position: fixed;
+  bottom: 0;
+  left: 250px; /* Adjust according to the sidebar width */
+  right: 0;
+  background-color: #181818;
+  padding: 10px;
+  border-top: 1px solid #333;
+  z-index: 1000;
+}
+
+audio {
+  width: 100%;
+  margin-top: 10px;
+}
